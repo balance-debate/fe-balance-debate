@@ -1,0 +1,42 @@
+{
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
+  "search.exclude": {
+    ".next": true,
+    "**/__snapshots__": true,
+    "**/*.js": true,
+    "**/node_modules": true
+  },
+  "json.format.enable": false,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "javascript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "always",
+    "source.fixAll.stylelint": "always"
+  },
+  "eslint.enable": true,
+  "scss.lint.unknownAtRules": "ignore",
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+  "tailwindCSS.experimental.classRegex": [
+    ["\\w*[cC]lassName=[\"]([^\"]*)[\"]"],
+    ["\\w*[cC]lassName=[']([^']*)[']"],
+    ["cn\\(([^)]*)\\)", "'([^']*)'"]
+  ],
+  "tailwindCSS.classAttributes": [
+    "class",
+    "className",
+    "ngClass",
+    ".*CLASSES*"
+  ],
+  "explorer.fileNesting.enabled": true
+}
