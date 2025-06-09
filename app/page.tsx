@@ -1,5 +1,7 @@
-import TestServerContainer from "@/domains/container/TestServerContainer.server";
+import { permanentRedirect } from "next/navigation";
 
 export default async function Home() {
-  return <TestServerContainer />;
+  permanentRedirect("/debat");
+
+  return null;
 }
