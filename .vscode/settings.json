@@ -7,7 +7,6 @@
   "search.exclude": {
     ".next": true,
     "**/__snapshots__": true,
-    "**/*.js": true,
     "**/node_modules": true
   },
   "json.format.enable": false,
