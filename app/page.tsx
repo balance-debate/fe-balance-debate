@@ -1,7 +1,7 @@
 import { permanentRedirect } from "next/navigation";
 
 export default async function Home() {
-  permanentRedirect("/debat");
+  permanentRedirect("/debate");
 
   return null;
 }
