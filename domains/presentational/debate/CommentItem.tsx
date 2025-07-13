@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Comment } from "./types";
 import { CommentInput } from "./CommentInput";
+import { useAuthStatus } from "@/domains/common/hooks/useAuthStatus";
+import { useAuthModal } from "@/lib/providers/AuthModalProvider";
 
 interface CommentItemProps {
   comment: Comment;
@@ -10,9 +12,6 @@ interface CommentItemProps {
   onReply: (commentId: number, content: string) => void;
   onReplyLike: (replyId: number) => void;
 }
-
-// TODO: 실제 로그인 상태 확인 로직으로 교체 필요
-const IS_LOGGED_IN = true; // 임시 상수
 
 export function CommentItem({
   comment,
@@ -23,10 +22,12 @@ export function CommentItem({
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
 
+  const { isAuthenticated } = useAuthStatus();
+  const { openLoginModal } = useAuthModal();
+
   const handleLike = () => {
-    if (!IS_LOGGED_IN) {
-      // TODO: 로그인 모달 표시
-      console.log("TODO: Show login modal");
+    if (!isAuthenticated) {
+      openLoginModal();
       return;
     }
     onLike(comment.id);
@@ -38,9 +39,8 @@ export function CommentItem({
   };
 
   const handleReplyLike = (replyId: number) => {
-    if (!IS_LOGGED_IN) {
-      // TODO: 로그인 모달 표시
-      console.log("TODO: Show login modal");
+    if (!isAuthenticated) {
+      openLoginModal();
       return;
     }
     onReplyLike(replyId);

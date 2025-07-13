@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Comment } from "./types";
 import { CommentInput } from "./CommentInput";
 import { CommentList } from "./CommentList";
+import { useAuthStatus } from "@/domains/common/hooks/useAuthStatus";
 
 interface CommentSectionProps {
   debateId: number;
@@ -76,6 +77,7 @@ const mockComments: Comment[] = [
 
 export function CommentSection({ debateId }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>(mockComments);
+  const { user } = useAuthStatus();
 
   // 좋아요 순으로 정렬
   const sortedComments = [...comments].sort(
@@ -86,8 +88,10 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     const newComment: Comment = {
       id: Date.now(), // 임시 ID
       author: {
-        name: "나", // TODO: 실제 사용자 정보로 교체
-        profileImage: "https://picsum.photos/seed/me/40/40",
+        name: user?.nickname || "익명", // 실제 사용자 정보 사용
+        profileImage: user?.nickname
+          ? `https://picsum.photos/seed/${user.nickname}/40/40`
+          : "https://picsum.photos/seed/anonymous/40/40",
       },
       content,
       likeCount: 0,
@@ -124,8 +128,10 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     const newReply = {
       id: Date.now(), // 임시 ID
       author: {
-        name: "나", // TODO: 실제 사용자 정보로 교체
-        profileImage: "https://picsum.photos/seed/me/40/40",
+        name: user?.nickname || "익명", // 실제 사용자 정보 사용
+        profileImage: user?.nickname
+          ? `https://picsum.photos/seed/${user.nickname}/40/40`
+          : "https://picsum.photos/seed/anonymous/40/40",
       },
       content,
       likeCount: 0,

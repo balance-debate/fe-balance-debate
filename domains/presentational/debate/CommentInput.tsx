@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useAuthStatus } from "@/domains/common/hooks/useAuthStatus";
+import { useAuthModal } from "@/lib/providers/AuthModalProvider";
 
 interface CommentInputProps {
   onSubmit: (content: string) => void;
   placeholder?: string;
   isReply?: boolean;
 }
-
-// TODO: 실제 로그인 상태 확인 로직으로 교체 필요
-const IS_LOGGED_IN = true; // 임시 상수
 
 export function CommentInput({
   onSubmit,
@@ -19,13 +18,15 @@ export function CommentInput({
   const [content, setContent] = useState("");
   const [isFocused, setIsFocused] = useState(false);
 
+  const { isAuthenticated, user } = useAuthStatus();
+  const { openLoginModal } = useAuthModal();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
 
-    if (!IS_LOGGED_IN) {
-      // TODO: 로그인 모달 표시
-      console.log("TODO: Show login modal");
+    if (!isAuthenticated) {
+      openLoginModal();
       return;
     }
 
@@ -34,23 +35,14 @@ export function CommentInput({
     setIsFocused(false);
   };
 
-  const handleClick = () => {
-    if (!IS_LOGGED_IN) {
-      // TODO: 로그인 모달 표시
-      console.log("TODO: Show login modal");
-      return;
-    }
-    setIsFocused(true);
-  };
-
   return (
     <div className={`${isReply ? "ml-12" : ""}`}>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="flex items-start space-x-3">
           {/* 프로필 이미지 (로그인 상태일 때만) */}
-          {IS_LOGGED_IN && (
+          {isAuthenticated && user && (
             <img
-              src="https://picsum.photos/40/40" // TODO: 실제 사용자 프로필 이미지
+              src={`https://picsum.photos/seed/${user.nickname}/40/40`}
               alt="내 프로필"
               className="w-8 h-8 rounded-full flex-shrink-0"
             />
@@ -60,24 +52,23 @@ export function CommentInput({
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              onClick={handleClick}
-              onFocus={() => setIsFocused(true)}
+              onFocus={() => isAuthenticated && setIsFocused(true)}
               placeholder={
-                IS_LOGGED_IN
+                isAuthenticated
                   ? placeholder
                   : "댓글을 작성하려면 로그인이 필요합니다."
               }
-              disabled={!IS_LOGGED_IN}
+              disabled={!isAuthenticated}
               className={`w-full p-3 border rounded-lg resize-none transition-all ${
-                IS_LOGGED_IN
+                isAuthenticated
                   ? "border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  : "border-gray-200 bg-gray-50 cursor-pointer"
+                  : "border-gray-200 bg-gray-50 cursor-not-allowed"
               } ${isFocused ? "min-h-[100px]" : "min-h-[44px]"}`}
               rows={isFocused ? 3 : 1}
             />
 
             {/* 버튼들 (포커스 상태일 때만 표시) */}
-            {isFocused && IS_LOGGED_IN && (
+            {isFocused && isAuthenticated && (
               <div className="flex justify-end space-x-2 mt-2">
                 <button
                   type="button"
