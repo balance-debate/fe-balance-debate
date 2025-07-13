@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DebateDetailContent } from "../../presentational/debate/DebateDetailContent";
 import { DebateDetailStats } from "../../presentational/debate/DebateDetailStats";
+import { CommentSection } from "../../presentational/debate/CommentSection";
 
 export function DebateDetailContainer() {
   const [selectedSide, setSelectedSide] = useState<"left" | "right" | null>(
@@ -20,14 +21,15 @@ export function DebateDetailContainer() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 space-y-8">
       <DebateDetailContent
         title="이 주제에 대해 어떻게 생각하시나요?"
         thumbnail="https://picsum.photos/800/400"
         onSelectSide={handleSelectSide}
         selectedSide={selectedSide}
       />
-      <div className="relative mt-8">
+
+      <div className="relative">
         {selectedSide === null ? (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-xl border-2 border-gray-200">
             <p className="text-lg font-medium text-gray-600">
@@ -42,6 +44,9 @@ export function DebateDetailContainer() {
           />
         </div>
       </div>
+
+      {/* 댓글 섹션 */}
+      <CommentSection debateId={1} />
     </div>
   );
 }
