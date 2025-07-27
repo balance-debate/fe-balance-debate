@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:https": "next dev --experimental-https --experimental-https-key _wildcard.debate.in-key.pem --experimental-https-cert _wildcard.debate.in.pem -H dev.debate.in -p 443",
+    "prepare:cert": "mkcert -install && mkcert *.debate.in",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

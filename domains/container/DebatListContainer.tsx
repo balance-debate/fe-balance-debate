@@ -1,35 +1,54 @@
 "use client";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { DebateItem } from "../presentational/debate/DebateItem";
-import { type DebateItem as DebateItemType } from "../presentational/debate/types";
-
-// 모킹 데이터
-const mockDebates: DebateItemType[] = Array.from(
-  { length: 100 },
-  (_, index) => ({
-    id: index + 1,
-    author: {
-      name: `작성자 ${index + 1}`,
-      profileImage: `https://picsum.photos/seed/${index}/40/40`,
-    },
-    createdAt: new Date(Date.now() - Math.random() * 10000000000),
-    title: `토론 주제 ${index + 1}: 이것은 매우 흥미로운 토론 주제입니다.`,
-    thumbnail: `https://picsum.photos/seed/${index + 100}/300/200`,
-    commentCount: Math.floor(Math.random() * 100),
-  })
-);
+import { type DebateFromAPI } from "../presentational/debate/types";
+import { fetchDebates } from "@/lib/api";
 
 export default function DebatListContainer() {
   const parentRef = useRef<HTMLDivElement>(null);
+  const [debates, setDebates] = useState<DebateFromAPI[]>([]);
+  const [hasNext, setHasNext] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const loadMoreDebates = async () => {
+    if (isLoading || !hasNext) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetchDebates(currentPage, 20);
+      setDebates((prev) => [...prev, ...response.debates]);
+      setHasNext(response.hasNext);
+      setCurrentPage((prev) => prev + 1);
+    } catch (error) {
+      console.error("토론 목록을 불러오는데 실패했습니다:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMoreDebates();
+  }, []);
 
   const rowVirtualizer = useVirtualizer({
-    count: mockDebates.length,
+    count: debates.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 430,
     overscan: 5,
   });
+
+  // 스크롤이 끝에 가까워지면 더 많은 데이터 로드
+  useEffect(() => {
+    const [lastItem] = [...rowVirtualizer.getVirtualItems()].reverse();
+    if (!lastItem) return;
+
+    if (lastItem.index >= debates.length - 1 && hasNext && !isLoading) {
+      loadMoreDebates();
+    }
+  }, [debates.length, hasNext, isLoading, rowVirtualizer.getVirtualItems()]);
 
   return (
     <div
@@ -43,7 +62,9 @@ export default function DebatListContainer() {
         }}
       >
         {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-          const debate = mockDebates[virtualRow.index];
+          const debate = debates[virtualRow.index];
+          if (!debate) return null;
+
           return (
             <div
               key={virtualRow.index}
@@ -52,11 +73,16 @@ export default function DebatListContainer() {
                 transform: `translateY(${virtualRow.start}px)`,
               }}
             >
-              <DebateItem debate={debate} />
+              <DebateItem debate={debate} index={virtualRow.index} />
             </div>
           );
         })}
       </div>
+      {isLoading && (
+        <div className="flex justify-center py-4">
+          <div className="text-gray-500">로딩 중...</div>
+        </div>
+      )}
     </div>
   );
 }

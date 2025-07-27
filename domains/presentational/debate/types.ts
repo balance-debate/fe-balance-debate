@@ -10,6 +10,19 @@ export interface DebateItem {
   commentCount: number;
 }
 
+// API 응답에 맞는 새로운 타입
+export interface DebateFromAPI {
+  topic: string;
+  choiceA: string;
+  choiceB: string;
+  thumbnailUrl: string;
+}
+
+export interface DebatesAPIResponse {
+  hasNext: boolean;
+  debates: DebateFromAPI[];
+}
+
 // 댓글 타입 정의
 export interface Comment {
   id: number;

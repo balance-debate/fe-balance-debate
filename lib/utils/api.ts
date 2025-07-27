@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../constants";
+import { API_BASE_URL } from "@/lib/constants";
 import { ApiResponse, RequestOptions } from "../types/api";
 
 /**
@@ -42,6 +42,8 @@ export async function apiRequest<T = unknown>(
     console.log(`[API Request] ${method} ${url}`, body ? body : "");
 
     const response = await fetch(url, requestConfig);
+
+    console.log(response);
 
     // 응답을 JSON으로 파싱
     const data: ApiResponse<T> = await response.json();

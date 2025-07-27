@@ -1,5 +1,5 @@
 // API 관련 상수
-export const API_BASE_URL = "http://13.125.132.172";
+export const API_BASE_URL = "https://dev-api.balance-debate.com";
 
 // API 엔드포인트
 export const API_ENDPOINTS = {
