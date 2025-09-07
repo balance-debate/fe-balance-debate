@@ -137,3 +137,41 @@ export async function fetchComments(
 
   return response.data;
 }
+
+// 댓글/답글 작성
+export async function createComment(
+  debateId: number | string,
+  content: string,
+  parentCommentId: number | null = null
+): Promise<void> {
+  const response = await apiPost<null>(`/debates/${debateId}/comments`, {
+    content,
+    parentCommentId,
+  });
+
+  if (response.statusCode !== 200) {
+    // 코드 기반 우선 처리
+    if (response.code === "NOT_VOTED") {
+      throw new Error("NOT_VOTED");
+    }
+    if (response.code === "NOT_FOUND_DEBATE") {
+      throw new Error("NOT_FOUND_DEBATE");
+    }
+    if (response.code === "NOT_FOUND_COMMENT") {
+      throw new Error("NOT_FOUND_COMMENT");
+    }
+
+    // 백엔드 구현과의 불일치 대비 (status만 들어오는 경우)
+    if (response.statusCode === 403) {
+      throw new Error("NOT_VOTED");
+    }
+    if (response.statusCode === 404) {
+      throw new Error("NOT_FOUND_DEBATE");
+    }
+    if (response.statusCode === 400) {
+      throw new Error("NOT_FOUND_COMMENT");
+    }
+
+    throw new Error(`댓글 작성 실패: ${response.statusCode}`);
+  }
+}

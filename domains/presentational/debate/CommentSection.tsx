@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { Comment } from "./types";
 import { CommentInput } from "./CommentInput";
 import { CommentList } from "./CommentList";
-import { useAuthStatus } from "@/domains/common/hooks/useAuthStatus";
-import { fetchComments, type CommentFromAPI } from "@/lib/api";
+// import { useAuthStatus } from "@/domains/common/hooks/useAuthStatus";
+import { fetchComments, type CommentFromAPI, createComment } from "@/lib/api";
 
 interface CommentSectionProps {
   debateId: number;
@@ -15,49 +15,50 @@ export function CommentSection({ debateId }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuthStatus();
+  // const { user } = useAuthStatus();
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+  async function loadComments() {
+    try {
+      setIsLoading(true);
+      setError(null);
 
-        const data = await fetchComments(debateId, 0, 20);
+      const data = await fetchComments(debateId, 0, 20);
 
-        // API -> UI 타입 매핑
-        const mapped: Comment[] = data.comments.map((c: CommentFromAPI) => ({
-          id: c.id,
+      // API -> UI 타입 매핑
+      const mapped: Comment[] = data.comments.map((c: CommentFromAPI) => ({
+        id: c.id,
+        author: {
+          name: "익명",
+          profileImage: `https://picsum.photos/seed/comment-${c.id}/40/40`,
+        },
+        content: c.content,
+        likeCount: c.likeCount,
+        isLiked: c.liked,
+        replies: c.childComments.map((rc) => ({
+          id: rc.id,
           author: {
             name: "익명",
-            profileImage: `https://picsum.photos/seed/comment-${c.id}/40/40`,
+            profileImage: `https://picsum.photos/seed/reply-${rc.id}/40/40`,
           },
-          content: c.content,
-          likeCount: c.likeCount,
-          isLiked: c.liked,
-          replies: c.childComments.map((rc) => ({
-            id: rc.id,
-            author: {
-              name: "익명",
-              profileImage: `https://picsum.photos/seed/reply-${rc.id}/40/40`,
-            },
-            content: rc.content,
-            likeCount: rc.likeCount,
-            isLiked: rc.liked,
-            parentCommentId: c.id,
-          })),
-        }));
+          content: rc.content,
+          likeCount: rc.likeCount,
+          isLiked: rc.liked,
+          parentCommentId: c.id,
+        })),
+      }));
 
-        setComments(mapped);
-      } catch (e) {
-        const message = e instanceof Error ? e.message : "알 수 없는 오류";
-        setError(message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      setComments(mapped);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "알 수 없는 오류";
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
-    load();
+  useEffect(() => {
+    loadComments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debateId]);
 
   // 좋아요 순으로 정렬
@@ -65,25 +66,20 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     (a, b) => b.likeCount - a.likeCount
   );
 
-  const handleCommentSubmit = (content: string) => {
-    const newComment: Comment = {
-      id: Date.now(), // 임시 ID
-      author: {
-        name: user?.nickname || "익명", // 실제 사용자 정보 사용
-        profileImage: user?.nickname
-          ? `https://picsum.photos/seed/${user.nickname}/40/40`
-          : "https://picsum.photos/seed/anonymous/40/40",
-      },
-      content,
-      likeCount: 0,
-      isLiked: false,
-      replies: [],
-    };
-
-    setComments((prev) => [newComment, ...prev]);
-
-    // TODO: 실제 API 호출
-    console.log("TODO: API call to create comment", { debateId, content });
+  const handleCommentSubmit = async (content: string) => {
+    try {
+      await createComment(debateId, content, null);
+      await loadComments();
+    } catch (e) {
+      const err = e as Error;
+      if (err.message === "NOT_VOTED") {
+        setError("NOT_VOTED");
+      } else if (err.message === "NOT_FOUND_DEBATE") {
+        setError("존재하지 않는 토론입니다.");
+      } else {
+        setError(err.message || "댓글 작성에 실패했습니다.");
+      }
+    }
   };
 
   const handleCommentLike = (commentId: number) => {
@@ -105,34 +101,22 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     console.log("TODO: API call to like comment", { commentId });
   };
 
-  const handleReply = (commentId: number, content: string) => {
-    const newReply = {
-      id: Date.now(), // 임시 ID
-      author: {
-        name: user?.nickname || "익명", // 실제 사용자 정보 사용
-        profileImage: user?.nickname
-          ? `https://picsum.photos/seed/${user.nickname}/40/40`
-          : "https://picsum.photos/seed/anonymous/40/40",
-      },
-      content,
-      likeCount: 0,
-      isLiked: false,
-      parentCommentId: commentId,
-    };
-
-    setComments((prev) =>
-      prev.map((comment) =>
-        comment.id === commentId
-          ? {
-              ...comment,
-              replies: [...(comment.replies || []), newReply],
-            }
-          : comment
-      )
-    );
-
-    // TODO: 실제 API 호출
-    console.log("TODO: API call to create reply", { commentId, content });
+  const handleReply = async (commentId: number, content: string) => {
+    try {
+      await createComment(debateId, content, commentId);
+      await loadComments();
+    } catch (e) {
+      const err = e as Error;
+      if (err.message === "NOT_VOTED") {
+        setError("NOT_VOTED");
+      } else if (err.message === "NOT_FOUND_COMMENT") {
+        setError("부모 댓글을 찾을 수 없습니다.");
+      } else if (err.message === "NOT_FOUND_DEBATE") {
+        setError("존재하지 않는 토론입니다.");
+      } else {
+        setError(err.message || "답글 작성에 실패했습니다.");
+      }
+    }
   };
 
   const handleReplyLike = (replyId: number) => {
