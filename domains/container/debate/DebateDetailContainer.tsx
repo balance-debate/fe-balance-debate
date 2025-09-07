@@ -169,7 +169,7 @@ export function DebateDetailContainer({
         </div>
 
         {/* 댓글 섹션 */}
-        <CommentSection debateId={parseInt(debateId)} />
+        <CommentSection debateId={parseInt(debateId)} hasVote={hasVote} />
       </div>
 
       <Toast

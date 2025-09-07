@@ -15,9 +15,10 @@ import {
 
 interface CommentSectionProps {
   debateId: number;
+  hasVote?: boolean | null;
 }
 
-export function CommentSection({ debateId }: CommentSectionProps) {
+export function CommentSection({ debateId, hasVote }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,9 +64,17 @@ export function CommentSection({ debateId }: CommentSectionProps) {
   }
 
   useEffect(() => {
-    loadComments();
+    // 투표한 경우에만 댓글을 불러옵니다
+    if (hasVote === true) {
+      loadComments();
+    } else if (hasVote === false) {
+      // 투표 전에는 댓글 비노출
+      setComments([]);
+      setError("NOT_VOTED");
+      setIsLoading(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debateId]);
+  }, [debateId, hasVote]);
 
   // 서버 순서를 유지합니다 (정렬 제거)
 
