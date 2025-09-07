@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Comment } from "./types";
 import { CommentInput } from "./CommentInput";
 import { CommentList } from "./CommentList";
-// import { useAuthStatus } from "@/domains/common/hooks/useAuthStatus";
+import { useAuthStatus } from "@/domains/common/hooks/useAuthStatus";
 import {
   fetchComments,
   type CommentFromAPI,
@@ -21,7 +21,7 @@ export function CommentSection({ debateId }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  // const { user } = useAuthStatus();
+  const { user } = useAuthStatus();
 
   async function loadComments() {
     try {
@@ -30,12 +30,12 @@ export function CommentSection({ debateId }: CommentSectionProps) {
 
       const data = await fetchComments(debateId, 0, 20);
 
-      // API -> UI 타입 매핑
+      // API -> UI 타입 매핑 (writer 사용)
       const mapped: Comment[] = data.comments.map((c: CommentFromAPI) => ({
         id: c.id,
         author: {
-          name: "익명",
-          profileImage: `https://picsum.photos/seed/comment-${c.id}/40/40`,
+          name: c.writer?.nickname || "익명",
+          profileImage: c.writer?.profileEmoji || "🙂",
         },
         content: c.content,
         likeCount: c.likeCount,
@@ -43,8 +43,8 @@ export function CommentSection({ debateId }: CommentSectionProps) {
         replies: c.childComments.map((rc) => ({
           id: rc.id,
           author: {
-            name: "익명",
-            profileImage: `https://picsum.photos/seed/reply-${rc.id}/40/40`,
+            name: rc.writer?.nickname || "익명",
+            profileImage: rc.writer?.profileEmoji || "🙂",
           },
           content: rc.content,
           likeCount: rc.likeCount,
@@ -74,8 +74,8 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     const tempComment: Comment = {
       id: tempId,
       author: {
-        name: "익명",
-        profileImage: `https://picsum.photos/seed/comment-${tempId}/40/40`,
+        name: user?.nickname || "익명",
+        profileImage: user?.profileEmoji || "🙂",
       },
       content,
       likeCount: 0,
@@ -168,8 +168,8 @@ export function CommentSection({ debateId }: CommentSectionProps) {
                 {
                   id: tempId,
                   author: {
-                    name: "익명",
-                    profileImage: `https://picsum.photos/seed/reply-${tempId}/40/40`,
+                    name: user?.nickname || "익명",
+                    profileImage: user?.profileEmoji || "🙂",
                   },
                   content,
                   likeCount: 0,

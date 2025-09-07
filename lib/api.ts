@@ -103,11 +103,19 @@ export interface CommentFromAPI {
     liked: boolean;
     createdAt: string;
     updatedAt: string;
+    writer?: {
+      nickname: string;
+      profileEmoji: string;
+    };
   }>;
   likeCount: number;
   liked: boolean;
   createdAt: string;
   updatedAt: string;
+  writer?: {
+    nickname: string;
+    profileEmoji: string;
+  };
 }
 
 export interface CommentsAPIResponse {
