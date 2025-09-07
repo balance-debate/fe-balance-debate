@@ -1,83 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Comment } from "./types";
 import { CommentInput } from "./CommentInput";
 import { CommentList } from "./CommentList";
 import { useAuthStatus } from "@/domains/common/hooks/useAuthStatus";
+import { fetchComments, type CommentFromAPI } from "@/lib/api";
 
 interface CommentSectionProps {
   debateId: number;
 }
 
-// 임시 댓글 데이터
-const mockComments: Comment[] = [
-  {
-    id: 1,
-    author: {
-      name: "김철수",
-      profileImage: "https://picsum.photos/seed/user1/40/40",
-    },
-    content:
-      "정말 흥미로운 주제네요! 저는 찬성 쪽에 한 표를 던졌습니다. 여러분들은 어떻게 생각하시나요?",
-    likeCount: 12,
-    isLiked: false,
-    replies: [
-      {
-        id: 101,
-        author: {
-          name: "이영희",
-          profileImage: "https://picsum.photos/seed/user2/40/40",
-        },
-        content:
-          "저도 같은 생각이에요! 특히 환경적인 측면에서 생각해보면 더욱 그런 것 같습니다.",
-        likeCount: 3,
-        isLiked: true,
-        parentCommentId: 1,
-      },
-      {
-        id: 102,
-        author: {
-          name: "박민수",
-          profileImage: "https://picsum.photos/seed/user3/40/40",
-        },
-        content:
-          "흠... 저는 조금 다른 의견인데, 경제적 측면도 고려해야 한다고 생각해요.",
-        likeCount: 7,
-        isLiked: false,
-        parentCommentId: 1,
-      },
-    ],
-  },
-  {
-    id: 2,
-    author: {
-      name: "정현우",
-      profileImage: "https://picsum.photos/seed/user4/40/40",
-    },
-    content:
-      "반대 의견입니다. 실용성을 고려했을 때 다른 선택이 더 나을 것 같아요.",
-    likeCount: 8,
-    isLiked: true,
-    replies: [],
-  },
-  {
-    id: 3,
-    author: {
-      name: "최지은",
-      profileImage: "https://picsum.photos/seed/user5/40/40",
-    },
-    content:
-      "와 이런 주제로 토론하는 게 정말 재미있네요! 더 많은 사람들의 의견이 궁금합니다 😊",
-    likeCount: 15,
-    isLiked: false,
-    replies: [],
-  },
-];
-
 export function CommentSection({ debateId }: CommentSectionProps) {
-  const [comments, setComments] = useState<Comment[]>(mockComments);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuthStatus();
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const data = await fetchComments(debateId, 0, 20);
+
+        // API -> UI 타입 매핑
+        const mapped: Comment[] = data.comments.map((c: CommentFromAPI) => ({
+          id: c.id,
+          author: {
+            name: "익명",
+            profileImage: `https://picsum.photos/seed/comment-${c.id}/40/40`,
+          },
+          content: c.content,
+          likeCount: c.likeCount,
+          isLiked: c.liked,
+          replies: c.childComments.map((rc) => ({
+            id: rc.id,
+            author: {
+              name: "익명",
+              profileImage: `https://picsum.photos/seed/reply-${rc.id}/40/40`,
+            },
+            content: rc.content,
+            likeCount: rc.likeCount,
+            isLiked: rc.liked,
+            parentCommentId: c.id,
+          })),
+        }));
+
+        setComments(mapped);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "알 수 없는 오류";
+        setError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    load();
+  }, [debateId]);
 
   // 좋아요 순으로 정렬
   const sortedComments = [...comments].sort(
@@ -175,6 +156,32 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     // TODO: 실제 API 호출
     console.log("TODO: API call to like reply", { replyId });
   };
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl border-2 border-gray-200 p-6">
+        <div className="text-center py-8 text-gray-500">로딩 중...</div>
+      </div>
+    );
+  }
+
+  if (error === "NOT_VOTED") {
+    return (
+      <div className="bg-white rounded-xl border-2 border-gray-200 p-6">
+        <div className="text-center py-8 text-gray-600">
+          투표 후에 댓글을 확인할 수 있습니다
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-xl border-2 border-gray-200 p-6">
+        <div className="text-center py-8 text-red-500">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl border-2 border-gray-200 p-6">

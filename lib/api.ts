@@ -91,3 +91,49 @@ export async function fetchVoteResults(
 
   return response.data;
 }
+
+// 댓글 목록 조회
+export interface CommentFromAPI {
+  id: number;
+  content: string;
+  childComments: Array<{
+    id: number;
+    content: string;
+    likeCount: number;
+    liked: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  likeCount: number;
+  liked: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommentsAPIResponse {
+  hasNext: boolean;
+  comments: CommentFromAPI[];
+}
+
+export async function fetchComments(
+  debateId: number | string,
+  page: number = 0,
+  size: number = 20
+): Promise<CommentsAPIResponse> {
+  const response = await apiGet<CommentsAPIResponse>(
+    `/debates/${debateId}/comments?page=${page}&size=${size}`
+  );
+
+  if (response.statusCode !== 200) {
+    if (response.statusCode === 403) {
+      throw new Error("NOT_VOTED");
+    }
+    throw new Error(`댓글 조회 실패: ${response.statusCode}`);
+  }
+
+  if (!response.data) {
+    throw new Error("댓글 데이터가 없습니다.");
+  }
+
+  return response.data;
+}
