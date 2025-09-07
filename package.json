@@ -7,6 +7,8 @@
     "dev:https": "next dev --experimental-https --experimental-https-key _wildcard.debate.in-key.pem --experimental-https-cert _wildcard.debate.in.pem -H dev.debate.in -p 443",
     "prepare:cert": "mkcert -install && mkcert *.debate.in",
     "build": "next build",
+    "export": "next export",
+    "deploy": "pnpm build && touch out/.nojekyll && gh-pages -d out -b deploy",
     "start": "next start",
     "lint": "next lint"
   },
@@ -18,6 +20,7 @@
     "@tanstack/react-query": "^5.83.0",
     "@tanstack/react-virtual": "^3.13.10",
     "date-fns": "^4.1.0",
+    "gh-pages": "^6.3.0",
     "next": "15.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

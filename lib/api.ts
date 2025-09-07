@@ -103,19 +103,11 @@ export interface CommentFromAPI {
     liked: boolean;
     createdAt: string;
     updatedAt: string;
-    writer?: {
-      nickname: string;
-      profileEmoji: string;
-    };
   }>;
   likeCount: number;
   liked: boolean;
   createdAt: string;
   updatedAt: string;
-  writer?: {
-    nickname: string;
-    profileEmoji: string;
-  };
 }
 
 export interface CommentsAPIResponse {
@@ -151,14 +143,11 @@ export async function createComment(
   debateId: number | string,
   content: string,
   parentCommentId: number | null = null
-): Promise<number> {
-  const response = await apiPost<{ commentId: number }>(
-    `/debates/${debateId}/comments`,
-    {
-      content,
-      parentCommentId,
-    }
-  );
+): Promise<void> {
+  const response = await apiPost<null>(`/debates/${debateId}/comments`, {
+    content,
+    parentCommentId,
+  });
 
   if (response.statusCode !== 200) {
     // 코드 기반 우선 처리
@@ -185,10 +174,6 @@ export async function createComment(
 
     throw new Error(`댓글 작성 실패: ${response.statusCode}`);
   }
-  if (!response.data || typeof response.data.commentId !== "number") {
-    throw new Error("댓글 ID가 응답에 없습니다.");
-  }
-  return response.data.commentId;
 }
 
 // 댓글 좋아요

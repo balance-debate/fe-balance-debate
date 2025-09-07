@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Comment } from "./types";
 import { CommentInput } from "./CommentInput";
 import { CommentList } from "./CommentList";
-import { useAuthStatus } from "@/domains/common/hooks/useAuthStatus";
+// import { useAuthStatus } from "@/domains/common/hooks/useAuthStatus";
 import {
   fetchComments,
   type CommentFromAPI,
@@ -21,7 +21,7 @@ export function CommentSection({ debateId }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuthStatus();
+  // const { user } = useAuthStatus();
 
   async function loadComments() {
     try {
@@ -30,12 +30,12 @@ export function CommentSection({ debateId }: CommentSectionProps) {
 
       const data = await fetchComments(debateId, 0, 20);
 
-      // API -> UI 타입 매핑 (writer 사용)
+      // API -> UI 타입 매핑
       const mapped: Comment[] = data.comments.map((c: CommentFromAPI) => ({
         id: c.id,
         author: {
-          name: c.writer?.nickname || "익명",
-          profileImage: c.writer?.profileEmoji || "🙂",
+          name: "익명",
+          profileImage: `https://picsum.photos/seed/comment-${c.id}/40/40`,
         },
         content: c.content,
         likeCount: c.likeCount,
@@ -43,8 +43,8 @@ export function CommentSection({ debateId }: CommentSectionProps) {
         replies: c.childComments.map((rc) => ({
           id: rc.id,
           author: {
-            name: rc.writer?.nickname || "익명",
-            profileImage: rc.writer?.profileEmoji || "🙂",
+            name: "익명",
+            profileImage: `https://picsum.photos/seed/reply-${rc.id}/40/40`,
           },
           content: rc.content,
           likeCount: rc.likeCount,
@@ -74,8 +74,8 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     const tempComment: Comment = {
       id: tempId,
       author: {
-        name: user?.nickname || "익명",
-        profileImage: user?.profileEmoji || "🙂",
+        name: "익명",
+        profileImage: `https://picsum.photos/seed/comment-${tempId}/40/40`,
       },
       content,
       likeCount: 0,
@@ -87,11 +87,8 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     setComments((prev) => [tempComment, ...prev]);
 
     try {
-      const newId = await createComment(debateId, content, null);
-      // 성공 시 임시 ID를 서버 ID로 치환
-      setComments((prev) =>
-        prev.map((c) => (c.id === tempId ? { ...c, id: newId } : c))
-      );
+      await createComment(debateId, content, null);
+      // 성공 시 재조회하지 않고 낙관적 상태 유지
     } catch (e) {
       // 실패 시 롤백
       setComments((prev) => prev.filter((c) => c.id !== tempId));
@@ -171,8 +168,8 @@ export function CommentSection({ debateId }: CommentSectionProps) {
                 {
                   id: tempId,
                   author: {
-                    name: user?.nickname || "익명",
-                    profileImage: user?.profileEmoji || "🙂",
+                    name: "익명",
+                    profileImage: `https://picsum.photos/seed/reply-${tempId}/40/40`,
                   },
                   content,
                   likeCount: 0,
@@ -186,20 +183,8 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     );
 
     try {
-      const newId = await createComment(debateId, content, commentId);
-      // 성공 시 임시 대댓글 ID를 서버 ID로 치환
-      setComments((prev) =>
-        prev.map((c) =>
-          c.id === commentId
-            ? {
-                ...c,
-                replies: (c.replies || []).map((r) =>
-                  r.id === tempId ? { ...r, id: newId } : r
-                ),
-              }
-            : c
-        )
-      );
+      await createComment(debateId, content, commentId);
+      // 성공 시 재조회하지 않고 낙관적 상태 유지
     } catch (e) {
       // 실패 시 낙관적 추가 롤백
       setComments((prev) =>
