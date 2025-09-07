@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Comment } from "./types";
 import { CommentInput } from "./CommentInput";
 import { CommentList } from "./CommentList";
-// import { useAuthStatus } from "@/domains/common/hooks/useAuthStatus";
+import { useAuthStatus } from "@/domains/common/hooks/useAuthStatus";
 import {
   fetchComments,
   type CommentFromAPI,
@@ -22,7 +22,7 @@ export function CommentSection({ debateId, hasVote }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  // const { user } = useAuthStatus();
+  const { user, isAuthenticated } = useAuthStatus();
 
   async function loadComments() {
     try {
@@ -35,8 +35,8 @@ export function CommentSection({ debateId, hasVote }: CommentSectionProps) {
       const mapped: Comment[] = data.comments.map((c: CommentFromAPI) => ({
         id: c.id,
         author: {
-          name: "익명",
-          profileImage: `https://picsum.photos/seed/comment-${c.id}/40/40`,
+          name: c.writer?.nickname ?? "익명",
+          profileImage: c.writer?.profileEmoji ?? "🙂",
         },
         content: c.content,
         likeCount: c.likeCount,
@@ -44,8 +44,8 @@ export function CommentSection({ debateId, hasVote }: CommentSectionProps) {
         replies: c.childComments.map((rc) => ({
           id: rc.id,
           author: {
-            name: "익명",
-            profileImage: `https://picsum.photos/seed/reply-${rc.id}/40/40`,
+            name: rc.writer?.nickname ?? "익명",
+            profileImage: rc.writer?.profileEmoji ?? "🙂",
           },
           content: rc.content,
           likeCount: rc.likeCount,
@@ -79,28 +79,23 @@ export function CommentSection({ debateId, hasVote }: CommentSectionProps) {
   // 서버 순서를 유지합니다 (정렬 제거)
 
   const handleCommentSubmit = async (content: string) => {
-    const tempId = Date.now();
-    const tempComment: Comment = {
-      id: tempId,
-      author: {
-        name: "익명",
-        profileImage: `https://picsum.photos/seed/comment-${tempId}/40/40`,
-      },
-      content,
-      likeCount: 0,
-      isLiked: false,
-      replies: [],
-    };
-
-    // 낙관적 추가
-    setComments((prev) => [tempComment, ...prev]);
-
     try {
-      await createComment(debateId, content, null);
-      // 성공 시 재조회하지 않고 낙관적 상태 유지
+      const { commentId } = await createComment(debateId, content, null);
+      const tempId = commentId;
+      const tempComment: Comment = {
+        id: tempId,
+        author: {
+          name: isAuthenticated && user?.nickname ? user.nickname : "익명",
+          profileImage:
+            isAuthenticated && user?.profileEmoji ? user.profileEmoji : "🙂",
+        },
+        content,
+        likeCount: 0,
+        isLiked: false,
+        replies: [],
+      };
+      setComments((prev) => [tempComment, ...prev]);
     } catch (e) {
-      // 실패 시 롤백
-      setComments((prev) => prev.filter((c) => c.id !== tempId));
       const err = e as Error;
       if (err.message === "NOT_VOTED") {
         setError("NOT_VOTED");
@@ -109,7 +104,6 @@ export function CommentSection({ debateId, hasVote }: CommentSectionProps) {
       } else {
         setError(err.message || "댓글 작성에 실패했습니다.");
       }
-      // 실패 시 서버 리스트 재조회로 동기화
       await loadComments();
     }
   };
@@ -165,48 +159,43 @@ export function CommentSection({ debateId, hasVote }: CommentSectionProps) {
   };
 
   const handleReply = async (commentId: number, content: string) => {
-    const tempId = Date.now();
-    // 낙관적 대댓글 추가
-    setComments((prev) =>
-      prev.map((c) =>
-        c.id === commentId
-          ? {
-              ...c,
-              replies: [
-                ...(c.replies || []),
-                {
-                  id: tempId,
-                  author: {
-                    name: "익명",
-                    profileImage: `https://picsum.photos/seed/reply-${tempId}/40/40`,
-                  },
-                  content,
-                  likeCount: 0,
-                  isLiked: false,
-                  parentCommentId: commentId,
-                },
-              ],
-            }
-          : c
-      )
-    );
-
     try {
-      await createComment(debateId, content, commentId);
-      // 성공 시 재조회하지 않고 낙관적 상태 유지
-    } catch (e) {
-      // 실패 시 낙관적 추가 롤백
+      const { commentId: newId } = await createComment(
+        debateId,
+        content,
+        commentId
+      );
+      const tempId = newId;
       setComments((prev) =>
         prev.map((c) =>
           c.id === commentId
             ? {
                 ...c,
-                replies: (c.replies || []).filter((r) => r.id !== tempId),
+                replies: [
+                  ...(c.replies || []),
+                  {
+                    id: tempId,
+                    author: {
+                      name:
+                        isAuthenticated && user?.nickname
+                          ? user.nickname
+                          : "익명",
+                      profileImage:
+                        isAuthenticated && user?.profileEmoji
+                          ? user.profileEmoji
+                          : "🙂",
+                    },
+                    content,
+                    likeCount: 0,
+                    isLiked: false,
+                    parentCommentId: commentId,
+                  },
+                ],
               }
             : c
         )
       );
-
+    } catch (e) {
       const err = e as Error;
       if (err.message === "NOT_VOTED") {
         setError("NOT_VOTED");
@@ -217,7 +206,6 @@ export function CommentSection({ debateId, hasVote }: CommentSectionProps) {
       } else {
         setError(err.message || "답글 작성에 실패했습니다.");
       }
-      // 실패 시 서버 리스트 재조회로 동기화
       await loadComments();
     }
   };

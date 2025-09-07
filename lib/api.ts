@@ -103,11 +103,19 @@ export interface CommentFromAPI {
     liked: boolean;
     createdAt: string;
     updatedAt: string;
+    writer?: {
+      nickname: string;
+      profileEmoji: string;
+    };
   }>;
   likeCount: number;
   liked: boolean;
   createdAt: string;
   updatedAt: string;
+  writer?: {
+    nickname: string;
+    profileEmoji: string;
+  };
 }
 
 export interface CommentsAPIResponse {
@@ -143,7 +151,7 @@ export async function createComment(
   debateId: number | string,
   content: string,
   parentCommentId: number | null = null
-): Promise<void> {
+): Promise<{ commentId: number }> {
   const response = await apiPost<null>(`/debates/${debateId}/comments`, {
     content,
     parentCommentId,
@@ -174,6 +182,13 @@ export async function createComment(
 
     throw new Error(`댓글 작성 실패: ${response.statusCode}`);
   }
+  // 백엔드에서 { data: { commentId } } 형태로 내려온다고 가정
+  // apiPost의 제네릭은 현재 null로 되어 있으나, 런타임 데이터는 존재할 수 있어 안전하게 파싱
+  const anyResponse = response as unknown as {
+    statusCode: number;
+    data: { commentId: number } | null;
+  };
+  return { commentId: anyResponse.data?.commentId ?? 0 };
 }
 
 // 댓글 좋아요

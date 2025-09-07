@@ -46,15 +46,29 @@ export function CommentItem({
     onReplyLike(replyId);
   };
 
+  const isImageLike = (value: string) => {
+    return (
+      value.startsWith("http://") ||
+      value.startsWith("https://") ||
+      value.startsWith("/")
+    );
+  };
+
   return (
     <div className="space-y-4">
       {/* 메인 댓글 */}
       <div className="flex items-start space-x-3">
-        <img
-          src={comment.author.profileImage}
-          alt={comment.author.name}
-          className="w-8 h-8 rounded-full flex-shrink-0"
-        />
+        {isImageLike(comment.author.profileImage) ? (
+          <img
+            src={comment.author.profileImage}
+            alt={comment.author.name}
+            className="w-8 h-8 rounded-full flex-shrink-0"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full flex-shrink-0 bg-gray-100 border border-gray-200 flex items-center justify-center text-base">
+            {comment.author.profileImage}
+          </div>
+        )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-2 text-sm">
@@ -149,11 +163,17 @@ export function CommentItem({
             <div className="space-y-4">
               {comment.replies.map((reply) => (
                 <div key={reply.id} className="flex items-start space-x-3">
-                  <img
-                    src={reply.author.profileImage}
-                    alt={reply.author.name}
-                    className="w-6 h-6 rounded-full flex-shrink-0"
-                  />
+                  {isImageLike(reply.author.profileImage) ? (
+                    <img
+                      src={reply.author.profileImage}
+                      alt={reply.author.name}
+                      className="w-6 h-6 rounded-full flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full flex-shrink-0 bg-gray-100 border border-gray-200 flex items-center justify-center text-sm">
+                      {reply.author.profileImage}
+                    </div>
+                  )}
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 text-sm">
