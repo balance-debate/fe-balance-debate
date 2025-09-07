@@ -67,16 +67,31 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debateId]);
 
-  // 좋아요 순으로 정렬
-  const sortedComments = [...comments].sort(
-    (a, b) => b.likeCount - a.likeCount
-  );
+  // 서버 순서를 유지합니다 (정렬 제거)
 
   const handleCommentSubmit = async (content: string) => {
+    const tempId = Date.now();
+    const tempComment: Comment = {
+      id: tempId,
+      author: {
+        name: "익명",
+        profileImage: `https://picsum.photos/seed/comment-${tempId}/40/40`,
+      },
+      content,
+      likeCount: 0,
+      isLiked: false,
+      replies: [],
+    };
+
+    // 낙관적 추가
+    setComments((prev) => [tempComment, ...prev]);
+
     try {
       await createComment(debateId, content, null);
-      await loadComments();
+      // 성공 시 재조회하지 않고 낙관적 상태 유지
     } catch (e) {
+      // 실패 시 롤백
+      setComments((prev) => prev.filter((c) => c.id !== tempId));
       const err = e as Error;
       if (err.message === "NOT_VOTED") {
         setError("NOT_VOTED");
@@ -85,27 +100,55 @@ export function CommentSection({ debateId }: CommentSectionProps) {
       } else {
         setError(err.message || "댓글 작성에 실패했습니다.");
       }
+      // 실패 시 서버 리스트 재조회로 동기화
+      await loadComments();
     }
   };
 
   const handleCommentLike = async (commentId: number) => {
+    const target = comments.find((c) => c.id === commentId);
+    const wasLiked = !!target?.isLiked;
+
+    // 낙관적 토글
+    setComments((prev) =>
+      prev.map((c) =>
+        c.id === commentId
+          ? {
+              ...c,
+              isLiked: !c.isLiked,
+              likeCount: c.isLiked ? c.likeCount - 1 : c.likeCount + 1,
+            }
+          : c
+      )
+    );
+
     try {
-      const target = comments.find((c) => c.id === commentId);
-      if (target?.isLiked) {
+      if (wasLiked) {
         await unlikeComment(commentId);
       } else {
         await likeComment(commentId);
       }
-      await loadComments();
     } catch (e) {
+      // 실패 시 롤백
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId
+            ? {
+                ...c,
+                isLiked: wasLiked,
+                likeCount: wasLiked ? c.likeCount + 1 : c.likeCount - 1,
+              }
+            : c
+        )
+      );
+
       const err = e as Error;
       if (err.message === "NOT_VOTED") {
         setError("NOT_VOTED");
       } else if (err.message === "NOT_FOUND_COMMENT") {
         setError("댓글을 찾을 수 없습니다.");
       } else if (err.message === "ALREADY_LIKED_COMMENT") {
-        // 이미 좋아요 한 경우 UX: 무시하고 최신 목록만 반영
-        await loadComments();
+        // 이미 좋아요 상태면 무시
       } else {
         setError(err.message || "댓글 좋아요에 실패했습니다.");
       }
@@ -113,10 +156,48 @@ export function CommentSection({ debateId }: CommentSectionProps) {
   };
 
   const handleReply = async (commentId: number, content: string) => {
+    const tempId = Date.now();
+    // 낙관적 대댓글 추가
+    setComments((prev) =>
+      prev.map((c) =>
+        c.id === commentId
+          ? {
+              ...c,
+              replies: [
+                ...(c.replies || []),
+                {
+                  id: tempId,
+                  author: {
+                    name: "익명",
+                    profileImage: `https://picsum.photos/seed/reply-${tempId}/40/40`,
+                  },
+                  content,
+                  likeCount: 0,
+                  isLiked: false,
+                  parentCommentId: commentId,
+                },
+              ],
+            }
+          : c
+      )
+    );
+
     try {
       await createComment(debateId, content, commentId);
-      await loadComments();
+      // 성공 시 재조회하지 않고 낙관적 상태 유지
     } catch (e) {
+      // 실패 시 낙관적 추가 롤백
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId
+            ? {
+                ...c,
+                replies: (c.replies || []).filter((r) => r.id !== tempId),
+              }
+            : c
+        )
+      );
+
       const err = e as Error;
       if (err.message === "NOT_VOTED") {
         setError("NOT_VOTED");
@@ -127,33 +208,67 @@ export function CommentSection({ debateId }: CommentSectionProps) {
       } else {
         setError(err.message || "답글 작성에 실패했습니다.");
       }
+      // 실패 시 서버 리스트 재조회로 동기화
+      await loadComments();
     }
   };
 
   const handleReplyLike = async (replyId: number) => {
-    try {
-      let isLiked = false;
-      for (const c of comments) {
+    // 현재 liked 상태 파악
+    let wasLiked = false;
+    setComments((prev) => {
+      // 먼저 낙관적 토글을 수행하기 위해 미리 탐색
+      for (const c of prev) {
         const found = c.replies?.find((r) => r.id === replyId);
         if (found) {
-          isLiked = found.isLiked;
+          wasLiked = found.isLiked;
           break;
         }
       }
-      if (isLiked) {
+      return prev.map((c) => ({
+        ...c,
+        replies: c.replies?.map((r) =>
+          r.id === replyId
+            ? {
+                ...r,
+                isLiked: !r.isLiked,
+                likeCount: r.isLiked ? r.likeCount - 1 : r.likeCount + 1,
+              }
+            : r
+        ),
+      }));
+    });
+
+    try {
+      if (wasLiked) {
         await unlikeComment(replyId);
       } else {
         await likeComment(replyId);
       }
-      await loadComments();
     } catch (e) {
+      // 실패 시 롤백
+      setComments((prev) =>
+        prev.map((c) => ({
+          ...c,
+          replies: c.replies?.map((r) =>
+            r.id === replyId
+              ? {
+                  ...r,
+                  isLiked: wasLiked,
+                  likeCount: wasLiked ? r.likeCount + 1 : r.likeCount - 1,
+                }
+              : r
+          ),
+        }))
+      );
+
       const err = e as Error;
       if (err.message === "NOT_VOTED") {
         setError("NOT_VOTED");
       } else if (err.message === "NOT_FOUND_COMMENT") {
         setError("댓글을 찾을 수 없습니다.");
       } else if (err.message === "ALREADY_LIKED_COMMENT") {
-        await loadComments();
+        // 이미 좋아요 상태면 무시
       } else {
         setError(err.message || "답글 좋아요에 실패했습니다.");
       }
@@ -192,7 +307,7 @@ export function CommentSection({ debateId }: CommentSectionProps) {
         <h3 className="text-lg font-semibold text-gray-900">
           댓글 {comments.length}개
         </h3>
-        <div className="text-sm text-gray-500">좋아요 순으로 정렬됨</div>
+        {/* 서버 순서를 그대로 표시합니다 */}
       </div>
 
       {/* 댓글 입력 */}
@@ -202,7 +317,7 @@ export function CommentSection({ debateId }: CommentSectionProps) {
 
       {/* 댓글 목록 */}
       <CommentList
-        comments={sortedComments}
+        comments={comments}
         onLike={handleCommentLike}
         onReply={handleReply}
         onReplyLike={handleReplyLike}
