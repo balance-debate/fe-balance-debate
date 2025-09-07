@@ -2,13 +2,15 @@
   "name": "fe-balance-debate",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://balance-debate.github.io/fe-balance-debate/",
   "scripts": {
     "dev": "next dev",
     "dev:https": "next dev --experimental-https --experimental-https-key _wildcard.debate.in-key.pem --experimental-https-cert _wildcard.debate.in.pem -H dev.debate.in -p 443",
     "prepare:cert": "mkcert -install && mkcert *.debate.in",
     "build": "next build",
     "export": "next export",
-    "deploy": "pnpm build && touch out/.nojekyll && gh-pages -d out -b deploy",
+    "predeploy": "npm run build",
+    "deploy": "touch out/.nojekyll && gh-pages -d out --dotfiles",
     "start": "next start",
     "lint": "next lint"
   },
