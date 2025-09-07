@@ -20,6 +20,7 @@ export interface RequestOptions {
 // 인증 관련 타입
 export interface User {
   nickname: string;
+  profileEmoji: string;
 }
 
 export interface LoginRequest {

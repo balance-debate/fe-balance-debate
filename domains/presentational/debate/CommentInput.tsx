@@ -41,11 +41,12 @@ export function CommentInput({
         <div className="flex items-start space-x-3">
           {/* 프로필 이미지 (로그인 상태일 때만) */}
           {isAuthenticated && user && (
-            <img
-              src={`https://picsum.photos/seed/${user.nickname}/40/40`}
-              alt="내 프로필"
-              className="w-8 h-8 rounded-full flex-shrink-0"
-            />
+            <div
+              className="w-8 h-8 rounded-full flex-shrink-0 bg-gray-100 border border-gray-200 flex items-center justify-center text-base"
+              aria-label="내 프로필"
+            >
+              {user.profileEmoji || user.nickname?.charAt(0)}
+            </div>
           )}
 
           <div className="flex-1">

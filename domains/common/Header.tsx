@@ -68,10 +68,11 @@ export function Header({ title }: HeaderProps) {
                 className="flex items-center gap-2 rounded-full p-2 hover:bg-gray-100 transition-colors"
               >
                 <Avatar
-                  src={`https://picsum.photos/seed/${user.nickname}/40/40`}
                   alt={user.nickname}
-                  sx={{ width: 32, height: 32 }}
-                />
+                  sx={{ width: 32, height: 32, fontSize: 18 }}
+                >
+                  {user.profileEmoji || user.nickname?.charAt(0)}
+                </Avatar>
                 <span className="hidden md:inline font-medium text-gray-900">
                   {user.nickname}
                 </span>
