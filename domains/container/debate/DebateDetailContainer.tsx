@@ -45,19 +45,19 @@ export function DebateDetailContainer({
       try {
         setIsLoading(true);
 
-        // 토론 정보, 투표 여부, 투표 결과를 병렬로 로드
-        const [debateData, voteStatus, results] = await Promise.all([
+        // 토론 정보와 투표 여부를 먼저 로드
+        const [debateData, voteStatus] = await Promise.all([
           fetchDebateDetail(debateId),
           fetchHasVote(debateId),
-          fetchVoteResults(debateId),
         ]);
 
         setDebate(debateData);
-        setHasVote(voteStatus.hasVote);
-        setVoteResults(results);
+        setHasVote(voteStatus?.hasVote);
 
-        // 이미 투표했다면 선택된 상태로 설정
-        if (voteStatus.hasVote) {
+        // 투표를 했다면 투표 결과도 로드
+        if (voteStatus?.hasVote) {
+          const results = await fetchVoteResults(debateId);
+          setVoteResults(results);
           setSelectedSide("left"); // 기본값으로 설정 (실제로는 서버에서 투표 정보를 가져와야 함)
         }
       } catch (err) {

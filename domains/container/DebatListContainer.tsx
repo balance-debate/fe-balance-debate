@@ -36,7 +36,7 @@ export default function DebatListContainer() {
   const rowVirtualizer = useVirtualizer({
     count: debates.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 430,
+    estimateSize: () => 500,
     overscan: 5,
   });
 

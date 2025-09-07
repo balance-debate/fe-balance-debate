@@ -2,86 +2,92 @@ import {
   type DebatesAPIResponse,
   type DebateFromAPI,
 } from "@/domains/presentational/debate/types";
-import { API_BASE_URL } from "@/lib/constants";
+import { apiGet, apiPost } from "@/lib/utils/api";
 
 export async function fetchDebates(
   page: number = 0,
   size: number = 20
 ): Promise<DebatesAPIResponse> {
-  const response = await fetch(
-    `${API_BASE_URL}/debates?size=${size}&page=${page}`
+  const response = await apiGet<DebatesAPIResponse>(
+    `/debates?size=${size}&page=${page}`
   );
 
-  if (!response.ok) {
-    throw new Error(`API 요청 실패: ${response.status}`);
+  if (response.statusCode !== 200) {
+    throw new Error(`API 요청 실패: ${response.statusCode}`);
   }
 
-  const data = await response.json();
-  return data.data;
+  return response.data!;
 }
 
 export async function fetchDebateDetail(id: string): Promise<DebateFromAPI> {
-  const response = await fetch(`${API_BASE_URL}/debates/${id}`);
+  const response = await apiGet<DebateFromAPI>(`/debates/${id}`);
 
-  if (!response.ok) {
-    if (response.status === 404) {
+  if (response.statusCode !== 200) {
+    if (response.statusCode === 404) {
       throw new Error("토론을 찾을 수 없습니다.");
     }
-    throw new Error(`API 요청 실패: ${response.status}`);
+    throw new Error(`API 요청 실패: ${response.statusCode}`);
   }
 
-  const data = await response.json();
-  return data.data;
+  if (!response.data) {
+    throw new Error("토론 데이터가 없습니다.");
+  }
+
+  return response.data;
 }
 
 export async function fetchHasVote(
   debateId: string
 ): Promise<{ hasVote: boolean }> {
-  const response = await fetch(`${API_BASE_URL}/debates/${debateId}/has-vote`);
+  const response = await apiGet<{ hasVote: boolean }>(
+    `/debates/${debateId}/has-vote`
+  );
 
-  if (!response.ok) {
-    throw new Error(`투표 여부 조회 실패: ${response.status}`);
+  if (response.statusCode !== 200) {
+    throw new Error(`투표 여부 조회 실패: ${response.statusCode}`);
   }
 
-  const data = await response.json();
-  return data.data;
+  if (!response.data) {
+    throw new Error("투표 여부 데이터가 없습니다.");
+  }
+
+  return response.data;
 }
 
 export async function submitVote(
   debateId: string,
   target: "CHOICE_A" | "CHOICE_B"
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/debates/${debateId}/votes`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ target }),
-  });
+  const response = await apiPost(`/debates/${debateId}/votes`, { target });
 
-  if (!response.ok) {
-    if (response.status === 404) {
+  if (response.statusCode !== 200) {
+    if (response.statusCode === 404) {
       throw new Error("토론을 찾을 수 없습니다.");
     }
-    if (response.status === 409) {
+    if (response.statusCode === 409) {
       throw new Error("이미 투표하셨습니다.");
     }
-    throw new Error(`투표 실패: ${response.status}`);
+    throw new Error(`투표 실패: ${response.statusCode}`);
   }
 }
 
 export async function fetchVoteResults(
   debateId: string
 ): Promise<{ choiceACount: number; choiceBCount: number }> {
-  const response = await fetch(`${API_BASE_URL}/debates/${debateId}/votes`);
+  const response = await apiGet<{ choiceACount: number; choiceBCount: number }>(
+    `/debates/${debateId}/votes`
+  );
 
-  if (!response.ok) {
-    if (response.status === 404) {
+  if (response.statusCode !== 200) {
+    if (response.statusCode === 404) {
       throw new Error("토론을 찾을 수 없습니다.");
     }
-    throw new Error(`투표 결과 조회 실패: ${response.status}`);
+    throw new Error(`투표 결과 조회 실패: ${response.statusCode}`);
   }
 
-  const data = await response.json();
-  return data.data;
+  if (!response.data) {
+    throw new Error("투표 결과 데이터가 없습니다.");
+  }
+
+  return response.data;
 }
