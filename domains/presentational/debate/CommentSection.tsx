@@ -87,8 +87,11 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     setComments((prev) => [tempComment, ...prev]);
 
     try {
-      await createComment(debateId, content, null);
-      // 성공 시 재조회하지 않고 낙관적 상태 유지
+      const newId = await createComment(debateId, content, null);
+      // 성공 시 임시 ID를 서버 ID로 치환
+      setComments((prev) =>
+        prev.map((c) => (c.id === tempId ? { ...c, id: newId } : c))
+      );
     } catch (e) {
       // 실패 시 롤백
       setComments((prev) => prev.filter((c) => c.id !== tempId));
@@ -183,8 +186,20 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     );
 
     try {
-      await createComment(debateId, content, commentId);
-      // 성공 시 재조회하지 않고 낙관적 상태 유지
+      const newId = await createComment(debateId, content, commentId);
+      // 성공 시 임시 대댓글 ID를 서버 ID로 치환
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId
+            ? {
+                ...c,
+                replies: (c.replies || []).map((r) =>
+                  r.id === tempId ? { ...r, id: newId } : r
+                ),
+              }
+            : c
+        )
+      );
     } catch (e) {
       // 실패 시 낙관적 추가 롤백
       setComments((prev) =>
