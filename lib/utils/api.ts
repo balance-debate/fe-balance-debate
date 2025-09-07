@@ -84,3 +84,13 @@ export function apiPost<T = unknown>(
 ): Promise<ApiResponse<T>> {
   return apiRequest<T>(endpoint, { ...options, method: "POST", body });
 }
+
+/**
+ * DELETE 요청 헬퍼 함수
+ */
+export function apiDelete<T = unknown>(
+  endpoint: string,
+  options: Omit<RequestOptions, "method" | "body"> = {}
+): Promise<ApiResponse<T>> {
+  return apiRequest<T>(endpoint, { ...options, method: "DELETE" });
+}

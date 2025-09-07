@@ -2,7 +2,7 @@ import {
   type DebatesAPIResponse,
   type DebateFromAPI,
 } from "@/domains/presentational/debate/types";
-import { apiGet, apiPost } from "@/lib/utils/api";
+import { apiGet, apiPost, apiDelete } from "@/lib/utils/api";
 
 export async function fetchDebates(
   page: number = 0,
@@ -173,5 +173,38 @@ export async function createComment(
     }
 
     throw new Error(`댓글 작성 실패: ${response.statusCode}`);
+  }
+}
+
+// 댓글 좋아요
+export async function likeComment(commentId: number | string): Promise<void> {
+  const response = await apiPost<null>(`/comments/${commentId}/likes`);
+
+  if (response.statusCode !== 200) {
+    if (response.code === "NOT_VOTED" || response.statusCode === 403) {
+      throw new Error("NOT_VOTED");
+    }
+    if (response.code === "NOT_FOUND_COMMENT" || response.statusCode === 404) {
+      throw new Error("NOT_FOUND_COMMENT");
+    }
+    if (
+      response.code === "ALREADY_LIKED_COMMENT" ||
+      response.statusCode === 409
+    ) {
+      throw new Error("ALREADY_LIKED_COMMENT");
+    }
+    throw new Error(`댓글 좋아요 실패: ${response.statusCode}`);
+  }
+}
+
+// 댓글 좋아요 취소
+export async function unlikeComment(commentId: number | string): Promise<void> {
+  const response = await apiDelete<null>(`/comments/${commentId}/likes`);
+
+  if (response.statusCode !== 200) {
+    if (response.code === "NOT_FOUND_COMMENT" || response.statusCode === 404) {
+      throw new Error("NOT_FOUND_COMMENT");
+    }
+    throw new Error(`댓글 좋아요 취소 실패: ${response.statusCode}`);
   }
 }

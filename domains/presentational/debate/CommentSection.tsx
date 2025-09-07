@@ -5,7 +5,13 @@ import { Comment } from "./types";
 import { CommentInput } from "./CommentInput";
 import { CommentList } from "./CommentList";
 // import { useAuthStatus } from "@/domains/common/hooks/useAuthStatus";
-import { fetchComments, type CommentFromAPI, createComment } from "@/lib/api";
+import {
+  fetchComments,
+  type CommentFromAPI,
+  createComment,
+  likeComment,
+  unlikeComment,
+} from "@/lib/api";
 
 interface CommentSectionProps {
   debateId: number;
@@ -82,23 +88,28 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     }
   };
 
-  const handleCommentLike = (commentId: number) => {
-    setComments((prev) =>
-      prev.map((comment) =>
-        comment.id === commentId
-          ? {
-              ...comment,
-              isLiked: !comment.isLiked,
-              likeCount: comment.isLiked
-                ? comment.likeCount - 1
-                : comment.likeCount + 1,
-            }
-          : comment
-      )
-    );
-
-    // TODO: 실제 API 호출
-    console.log("TODO: API call to like comment", { commentId });
+  const handleCommentLike = async (commentId: number) => {
+    try {
+      const target = comments.find((c) => c.id === commentId);
+      if (target?.isLiked) {
+        await unlikeComment(commentId);
+      } else {
+        await likeComment(commentId);
+      }
+      await loadComments();
+    } catch (e) {
+      const err = e as Error;
+      if (err.message === "NOT_VOTED") {
+        setError("NOT_VOTED");
+      } else if (err.message === "NOT_FOUND_COMMENT") {
+        setError("댓글을 찾을 수 없습니다.");
+      } else if (err.message === "ALREADY_LIKED_COMMENT") {
+        // 이미 좋아요 한 경우 UX: 무시하고 최신 목록만 반영
+        await loadComments();
+      } else {
+        setError(err.message || "댓글 좋아요에 실패했습니다.");
+      }
+    }
   };
 
   const handleReply = async (commentId: number, content: string) => {
@@ -119,26 +130,34 @@ export function CommentSection({ debateId }: CommentSectionProps) {
     }
   };
 
-  const handleReplyLike = (replyId: number) => {
-    setComments((prev) =>
-      prev.map((comment) => ({
-        ...comment,
-        replies: comment.replies?.map((reply) =>
-          reply.id === replyId
-            ? {
-                ...reply,
-                isLiked: !reply.isLiked,
-                likeCount: reply.isLiked
-                  ? reply.likeCount - 1
-                  : reply.likeCount + 1,
-              }
-            : reply
-        ),
-      }))
-    );
-
-    // TODO: 실제 API 호출
-    console.log("TODO: API call to like reply", { replyId });
+  const handleReplyLike = async (replyId: number) => {
+    try {
+      let isLiked = false;
+      for (const c of comments) {
+        const found = c.replies?.find((r) => r.id === replyId);
+        if (found) {
+          isLiked = found.isLiked;
+          break;
+        }
+      }
+      if (isLiked) {
+        await unlikeComment(replyId);
+      } else {
+        await likeComment(replyId);
+      }
+      await loadComments();
+    } catch (e) {
+      const err = e as Error;
+      if (err.message === "NOT_VOTED") {
+        setError("NOT_VOTED");
+      } else if (err.message === "NOT_FOUND_COMMENT") {
+        setError("댓글을 찾을 수 없습니다.");
+      } else if (err.message === "ALREADY_LIKED_COMMENT") {
+        await loadComments();
+      } else {
+        setError(err.message || "답글 좋아요에 실패했습니다.");
+      }
+    }
   };
 
   if (isLoading) {
