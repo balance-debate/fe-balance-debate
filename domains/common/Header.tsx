@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Avatar, Popover, Typography, Button, Box } from "@mui/material";
-import { ExitToApp as LogoutIcon } from "@mui/icons-material";
+import {
+  ExitToApp as LogoutIcon,
+  Share as ShareIcon,
+} from "@mui/icons-material";
 import { useAuthStatus } from "./hooks/useAuthStatus";
 import { useAuthModal } from "@/lib/providers/AuthModalProvider";
 import { useAuth } from "@/lib/api/auth";
@@ -42,8 +45,38 @@ export function Header({ title }: HeaderProps) {
     }
   };
 
+  const handleShare = async () => {
+    try {
+      const currentHref =
+        typeof window !== "undefined" ? window.location.href : location.href;
+      const urlObj = new URL(currentHref);
+      if (urlObj.pathname !== "/" && urlObj.pathname.endsWith("/")) {
+        urlObj.pathname = urlObj.pathname.replace(/\/+$/, "");
+      }
+      const normalizedUrl = urlObj.toString();
+      if (
+        typeof window !== "undefined" &&
+        window.navigator &&
+        window.navigator.clipboard &&
+        typeof window.navigator.clipboard.writeText === "function"
+      ) {
+        await window.navigator.clipboard.writeText(normalizedUrl);
+      } else {
+        const tempInput = document.createElement("input");
+        tempInput.value = normalizedUrl;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+      }
+      showSnackbar("링크가 클립보드에 복사되었습니다.", "success");
+    } catch {
+      showSnackbar("공유 중 오류가 발생했습니다.", "error");
+    }
+  };
+
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
+    <header className="fixed w-full top-0 z-50 border-b border-gray-200 bg-white">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8">
         {/* 로고 */}
         <Link href="/" className="text-xl font-bold text-gray-900">
@@ -59,6 +92,14 @@ export function Header({ title }: HeaderProps) {
 
         {/* 로그인/사용자 영역 */}
         <div className="flex items-center">
+          {/* 공유 버튼 */}
+          <button
+            onClick={handleShare}
+            aria-label="현재 페이지 공유"
+            className="mr-1 md:mr-2 rounded-full p-2 text-gray-500 hover:bg-gray-100 transition-colors"
+          >
+            <ShareIcon fontSize="small" />
+          </button>
           {isLoading ? (
             <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
           ) : isAuthenticated && user ? (
