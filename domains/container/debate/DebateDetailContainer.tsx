@@ -164,6 +164,8 @@ export function DebateDetailContainer({
             <DebateDetailStats
               agreeCount={voteResults?.choiceACount || 0}
               disagreeCount={voteResults?.choiceBCount || 0}
+              choiceALabel={debate.choiceA}
+              choiceBLabel={debate.choiceB}
             />
           </div>
         </div>
