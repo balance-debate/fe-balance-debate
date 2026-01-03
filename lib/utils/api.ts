@@ -15,7 +15,7 @@ export async function apiRequest<T = unknown>(
     method = "GET",
     headers = {},
     body,
-    credentials = "include", // 쿠키 방식 로그인을 위해 include 설정
+    credentials = "include", // 기본은 브라우저에서 include
   } = options;
 
   const url = `${API_BASE_URL}${endpoint}`;
@@ -30,7 +30,9 @@ export async function apiRequest<T = unknown>(
   const requestConfig: RequestInit = {
     method,
     headers: defaultHeaders,
-    credentials,
+    // 서버 런타임에서는 credentials 옵션을 생략(omit)하여 일부 환경에서의 오류를 방지
+    credentials:
+      typeof window === "undefined" ? "omit" : (credentials as RequestCredentials),
   };
 
   // body가 있는 경우 JSON 문자열로 변환

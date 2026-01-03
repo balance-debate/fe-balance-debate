@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { DebateDetailContent } from "../../presentational/debate/DebateDetailContent";
 import { DebateDetailStats } from "../../presentational/debate/DebateDetailStats";
