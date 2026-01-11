@@ -9,6 +9,7 @@ export function DebateItem({ debate }: DebateItemProps) {
   return (
     <Link
       href={`/debate/${debate.id}`}
+      scroll={true}
       className="mx-auto mb-5 block max-w-2xl overflow-hidden rounded-xl border-2 border-gray-200 bg-white p-5 shadow-md transition-all hover:shadow-lg"
     >
       <div className="mt-2">

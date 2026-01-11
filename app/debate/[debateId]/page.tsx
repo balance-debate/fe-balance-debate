@@ -4,6 +4,7 @@ import { DebateDetailContainer } from "@/domains/container/debate/DebateDetailCo
 import { API_BASE_URL } from "@/lib/constants";
 import type { ApiResponse } from "@/lib/types/api";
 import type { DebateFromAPI } from "@/domains/presentational/debate/types";
+import { ScrollToTop } from "@/domains/common/ScrollToTop";
 
 type PageProps = {
   params: Promise<{ debateId: string }>;
@@ -14,6 +15,7 @@ export default async function DebateDetailByIdPage({ params }: PageProps) {
   return (
     <div className="flex h-screen flex-col">
       <Header title="토론 주제" />
+      <ScrollToTop />
       {/* 클라이언트 컨테이너에 ID 전달 */}
       <DebateDetailContainer debateId={debateId} />
     </div>
