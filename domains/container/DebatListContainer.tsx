@@ -36,7 +36,8 @@ export default function DebatListContainer() {
   const rowVirtualizer = useVirtualizer({
     count: debates.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 500,
+    estimateSize: () => 513,
+    measureElement: (el) => el.getBoundingClientRect().height,
     overscan: 5,
   });
 
@@ -48,7 +49,7 @@ export default function DebatListContainer() {
     if (lastItem.index >= debates.length - 1 && hasNext && !isLoading) {
       loadMoreDebates();
     }
-  }, [debates.length, hasNext, isLoading, rowVirtualizer.getVirtualItems()]);
+  }, [debates.length, hasNext, isLoading, loadMoreDebates, rowVirtualizer]);
 
   return (
     <div
@@ -72,6 +73,7 @@ export default function DebatListContainer() {
               style={{
                 transform: `translateY(${virtualRow.start}px)`,
               }}
+              ref={rowVirtualizer.measureElement}
             >
               <DebateItem debate={debate} index={virtualRow.index} />
             </div>

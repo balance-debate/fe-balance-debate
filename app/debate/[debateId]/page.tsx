@@ -4,11 +4,11 @@ import { DebateDetailContainer } from "@/domains/container/debate/DebateDetailCo
 import { fetchDebateDetail } from "@/lib/api";
 
 type PageProps = {
-  params: { debateId: string };
+  params: Promise<{ debateId: string }>;
 };
 
 export default async function DebateDetailByIdPage({ params }: PageProps) {
-  const { debateId } = params;
+  const { debateId } = await params;
   return (
     <div className="flex h-screen flex-col">
       <Header title="토론 주제" />
@@ -21,7 +21,7 @@ export default async function DebateDetailByIdPage({ params }: PageProps) {
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { debateId } = params;
+  const { debateId } = await params;
   try {
     const data = await fetchDebateDetail(debateId);
     const title = data.topic || "토론 주제";
@@ -65,7 +65,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const site =
       (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL) ||
       "https://balance-debate.com";
-    const fullUrl = `${site}/debate/${params.debateId}`;
+    const fullUrl = `${site}/debate/${debateId}`;
     return {
       title: fallbackTitle,
       description: fallbackDescription,

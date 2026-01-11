@@ -5,7 +5,7 @@ export default function DebateLayout({
 }) {
   return (
     <div className="flex h-screen flex-col">
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pt-16">{children}</main>
     </div>
   );
 }
