@@ -2,15 +2,13 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Avatar, Popover, Typography, Button, Box } from "@mui/material";
-import {
-  ExitToApp as LogoutIcon,
-  Share as ShareIcon,
-} from "@mui/icons-material";
+import { Avatar, Popover, Typography, Button, Box, List, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
+import { ExitToApp as LogoutIcon, Share as ShareIcon, ContentCopy as ContentCopyIcon, Chat as ChatIcon } from "@mui/icons-material";
 import { useAuthStatus } from "./hooks/useAuthStatus";
 import { useAuthModal } from "@/lib/providers/AuthModalProvider";
 import { useAuth } from "@/lib/api/auth";
 import { useSnackbar } from "@/lib/providers/SnackbarProvider";
+import { ensureKakaoInitialized } from "@/lib/utils/kakao";
 
 interface HeaderProps {
   title?: string;
@@ -26,6 +24,8 @@ export function Header({ title }: HeaderProps) {
   // 팝오버 상태
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const isPopoverOpen = Boolean(anchorEl);
+  const [shareAnchorEl, setShareAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const isShareOpen = Boolean(shareAnchorEl);
 
   const handleUserClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -45,15 +45,27 @@ export function Header({ title }: HeaderProps) {
     }
   };
 
-  const handleShare = async () => {
+  const normalizeCurrentUrl = (): string => {
+    const currentHref =
+      typeof window !== "undefined" ? window.location.href : location.href;
+    const urlObj = new URL(currentHref);
+    if (urlObj.pathname !== "/" && urlObj.pathname.endsWith("/")) {
+      urlObj.pathname = urlObj.pathname.replace(/\/+$/, "");
+    }
+    return urlObj.toString();
+  };
+
+  const handleShareClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setShareAnchorEl(event.currentTarget);
+  };
+
+  const handleShareClose = () => {
+    setShareAnchorEl(null);
+  };
+
+  const handleCopyLink = async () => {
     try {
-      const currentHref =
-        typeof window !== "undefined" ? window.location.href : location.href;
-      const urlObj = new URL(currentHref);
-      if (urlObj.pathname !== "/" && urlObj.pathname.endsWith("/")) {
-        urlObj.pathname = urlObj.pathname.replace(/\/+$/, "");
-      }
-      const normalizedUrl = urlObj.toString();
+      const normalizedUrl = normalizeCurrentUrl();
       if (
         typeof window !== "undefined" &&
         window.navigator &&
@@ -70,8 +82,32 @@ export function Header({ title }: HeaderProps) {
         document.body.removeChild(tempInput);
       }
       showSnackbar("링크가 클립보드에 복사되었습니다.", "success");
+      handleShareClose();
     } catch {
       showSnackbar("공유 중 오류가 발생했습니다.", "error");
+    }
+  };
+
+  const handleKakaoShare = async () => {
+    try {
+      const appKey = process.env.NEXT_PUBLIC_KAKAO_APP_KEY;
+      if (!appKey) {
+        showSnackbar("Kakao 앱 키가 설정되지 않았습니다.", "error");
+        return;
+      }
+      const kakao = await ensureKakaoInitialized(appKey);
+      const url = normalizeCurrentUrl();
+      if (kakao.Share?.sendScrap) {
+        kakao.Share.sendScrap({ requestUrl: url });
+      } else if (kakao.Link?.sendScrap) {
+        kakao.Link.sendScrap({ requestUrl: url });
+      } else {
+        showSnackbar("카카오 공유를 지원하지 않는 환경입니다.", "error");
+        return;
+      }
+      handleShareClose();
+    } catch {
+      showSnackbar("카카오 공유 중 오류가 발생했습니다.", "error");
     }
   };
 
@@ -94,12 +130,36 @@ export function Header({ title }: HeaderProps) {
         <div className="flex items-center">
           {/* 공유 버튼 */}
           <button
-            onClick={handleShare}
+            onClick={handleShareClick}
             aria-label="현재 페이지 공유"
             className="mr-1 md:mr-2 rounded-full p-2 text-gray-500 hover:bg-gray-100 transition-colors"
           >
             <ShareIcon fontSize="small" />
           </button>
+          <Popover
+            open={isShareOpen}
+            anchorEl={shareAnchorEl}
+            onClose={handleShareClose}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            <Box sx={{ p: 1, minWidth: 220 }}>
+              <List dense disablePadding>
+                <ListItemButton onClick={handleCopyLink}>
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    <ContentCopyIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary="링크 복사" />
+                </ListItemButton>
+                <ListItemButton onClick={handleKakaoShare}>
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    <ChatIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary="카카오톡으로 공유" />
+                </ListItemButton>
+              </List>
+            </Box>
+          </Popover>
           {isLoading ? (
             <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
           ) : isAuthenticated && user ? (
