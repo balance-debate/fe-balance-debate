@@ -1,6 +1,7 @@
 import { Header } from "@/domains/common/Header";
 import type { Metadata } from "next";
-import { fetchDebates } from "@/lib/api";
+import { API_BASE_URL } from "@/lib/constants";
+import type { DebatesAPIResponse } from "@/domains/presentational/debate/types";
 import DebatListContainer from "@/domains/container/DebatListContainer";
 
 export default async function DebatPage() {
@@ -17,8 +18,15 @@ export async function generateMetadata(): Promise<Metadata> {
   const baseDescription = "요즘 가장 핫한 밸런스 토론 주제를 만나보세요.";
 
   try {
-    const data = await fetchDebates(0, 1);
-    const first = data.debates?.[0];
+    const res = await fetch(
+      `${API_BASE_URL}/debates?size=1&page=0`,
+      { next: { revalidate: 86400 } }
+    );
+    const json = (await res.json()) as {
+      statusCode: number;
+      data: DebatesAPIResponse | null;
+    };
+    const first = json.data?.debates?.[0];
 
     return {
       title: baseTitle,
