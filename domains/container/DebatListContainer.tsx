@@ -1,37 +1,41 @@
 "use client";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { DebateItem } from "../presentational/debate/DebateItem";
 import { type DebateFromAPI } from "../presentational/debate/types";
 import { fetchDebates } from "@/lib/api";
 
 export default function DebatListContainer() {
   const parentRef = useRef<HTMLDivElement>(null);
+  const isFetchingRef = useRef(false);
+  const pageRef = useRef(0);
   const [debates, setDebates] = useState<DebateFromAPI[]>([]);
   const [hasNext, setHasNext] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
 
-  const loadMoreDebates = async () => {
-    if (isLoading || !hasNext) return;
+  const loadMoreDebates = useCallback(async () => {
+    if (isFetchingRef.current || !hasNext) return;
 
+    isFetchingRef.current = true;
     setIsLoading(true);
     try {
-      const response = await fetchDebates(currentPage, 20);
+      const page = pageRef.current;
+      const response = await fetchDebates(page, 20);
       setDebates((prev) => [...prev, ...response.debates]);
       setHasNext(response.hasNext);
-      setCurrentPage((prev) => prev + 1);
+      pageRef.current = page + 1;
     } catch (error) {
       console.error("토론 목록을 불러오는데 실패했습니다:", error);
     } finally {
+      isFetchingRef.current = false;
       setIsLoading(false);
     }
-  };
+  }, [hasNext]);
 
   useEffect(() => {
-    loadMoreDebates();
-  }, []);
+    void loadMoreDebates();
+  }, [loadMoreDebates]);
 
   const rowVirtualizer = useVirtualizer({
     count: debates.length,
@@ -47,7 +51,7 @@ export default function DebatListContainer() {
     if (!lastItem) return;
 
     if (lastItem.index >= debates.length - 1 && hasNext && !isLoading) {
-      loadMoreDebates();
+      void loadMoreDebates();
     }
   }, [debates.length, hasNext, isLoading, loadMoreDebates, rowVirtualizer]);
 
