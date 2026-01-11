@@ -12,6 +12,7 @@ export interface DebateItem {
 
 // API 응답에 맞는 새로운 타입
 export interface DebateFromAPI {
+  id: number;
   topic: string;
   choiceA: string;
   choiceB: string;

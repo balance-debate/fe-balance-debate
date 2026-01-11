@@ -3,13 +3,12 @@ import Link from "next/link";
 
 interface DebateItemProps {
   debate: DebateFromAPI;
-  index: number;
 }
 
-export function DebateItem({ debate, index }: DebateItemProps) {
+export function DebateItem({ debate }: DebateItemProps) {
   return (
     <Link
-      href={`/debate/${index + 1}`}
+      href={`/debate/${debate.id}`}
       className="mx-auto mb-5 block max-w-2xl overflow-hidden rounded-xl border-2 border-gray-200 bg-white p-5 shadow-md transition-all hover:shadow-lg"
     >
       <div className="mt-2">

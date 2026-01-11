@@ -75,7 +75,7 @@ export default function DebatListContainer() {
               }}
               ref={rowVirtualizer.measureElement}
             >
-              <DebateItem debate={debate} index={virtualRow.index} />
+              <DebateItem debate={debate} />
             </div>
           );
         })}
