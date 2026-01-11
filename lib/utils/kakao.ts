@@ -2,6 +2,7 @@
 
 declare global {
   interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Kakao?: any;
   }
 }
@@ -14,7 +15,8 @@ function loadKakaoSdk(): Promise<void> {
     if (document.getElementById(id)) return resolve();
     const script = document.createElement("script");
     script.id = id;
-    script.src = "https://developers.kakao.com/sdk/js/kakao.min.js";
+    // 공식 권장 CDN (v2)
+    script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.1/kakao.min.js";
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("Kakao SDK 로드 실패"));
@@ -22,6 +24,7 @@ function loadKakaoSdk(): Promise<void> {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function ensureKakaoInitialized(appKey: string): Promise<any> {
   await loadKakaoSdk();
   const kakao = window.Kakao;
@@ -31,4 +34,3 @@ export async function ensureKakaoInitialized(appKey: string): Promise<any> {
   }
   return kakao;
 }
-
